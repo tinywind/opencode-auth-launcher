@@ -1,0 +1,8 @@
+auth.json
+*.log
+service.log
+service.pid
+service.env
+batch.env
+services.tsv
+profile.json
