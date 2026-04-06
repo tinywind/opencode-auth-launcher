@@ -31,12 +31,18 @@ The launcher never copies your auth file.
 
 Your source auth file remains the single source of truth, so token refreshes stay centralized.
 
-## Install shell commands
+## Install local commands
 
 ```bash
-bash ~/opencode-auth-launcher/install-bashrc-command.sh
+bash ~/IdeaProjects/opencode-auth-launcher/install-bashrc-command.sh
 source ~/.bashrc
 ```
+
+The installer copies the runtime scripts into `~/.local/share/opencode-auth-launcher`
+and installs standalone command files into `~/.local/bin`.
+It replaces any older `opencode-auth-launcher` shell-function block in your rc file with a minimal PATH block.
+The copied commands continue to work even if the original repository directory is removed later.
+Re-run the installer after updating the repository when you want to refresh the copied command files.
 
 ## Commands
 
@@ -149,6 +155,16 @@ opencode-web-auth start-folder ~/auth-files --port-start 4311 --hostname 0.0.0.0
         ├── service.env
         ├── service.log
         └── service.pid
+
+~/.local/share/opencode-auth-launcher/
+├── run-with-auth.sh
+├── link-global-auth.sh
+└── manage-web-service.sh
+
+~/.local/bin/
+├── opencode-auth
+├── opencode-auth-link
+└── opencode-web-auth
 ```
 
 ## Notes
@@ -156,5 +172,6 @@ opencode-web-auth start-folder ~/auth-files --port-start 4311 --hostname 0.0.0.0
 - The global symlink mode is intentionally single-target.
 - Multi-service mode uses isolated `XDG_DATA_HOME` directories because one global `auth.json` path cannot serve different auth files simultaneously.
 - The service launcher records logs and PIDs under `~/.opencode-auth-launcher/services/`.
+- The installer copies standalone commands into the user-local command path instead of relying on shell function wrappers.
 - Folder batch mode only targets files matching `auth.json-*`.
 - Folder batch state is stored under `~/.config/opencode-auth-launcher/batches/`.
