@@ -44,6 +44,32 @@ It replaces any older `opencode-auth-launcher` shell-function block in your rc f
 The copied commands continue to work even if the original repository directory is removed later.
 Re-run the installer after updating the repository when you want to refresh the copied command files.
 
+## Install a user systemd batch service
+
+If you want one `systemd --user` unit that runs `start-folder` and automatically re-syncs when `auth.json-*` files change, use:
+
+```bash
+bash ~/Projects/opencode-auth-launcher/install-systemd-batch-service.sh
+```
+
+Default behavior:
+
+- Watches `~/OneDrive/services/opencode-auths`
+- Starts the batch at port `8061`
+- Installs `opencode-web-auth-batch.service`
+- Installs a matching `.path` unit to reload the batch when the folder changes
+
+You can override the defaults:
+
+```bash
+bash ~/Projects/opencode-auth-launcher/install-systemd-batch-service.sh \
+  --folder ~/auth-files \
+  --port-start 4311 \
+  --service-name team-a-opencode \
+  --hostname 127.0.0.1 \
+  --prefix team-a
+```
+
 ## Commands
 
 ### 1) Switch the global auth link
