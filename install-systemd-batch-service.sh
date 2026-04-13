@@ -4,7 +4,7 @@ set -euo pipefail
 service_name="opencode-web-auth-batch"
 auth_folder="${HOME}/OneDrive/services/opencode-auths"
 port_start="8061"
-hostname=""
+hostname="0.0.0.0"
 mode=""
 service_prefix=""
 
@@ -16,7 +16,7 @@ Options:
   --folder PATH            Auth folder to manage. Default: ~/OneDrive/services/opencode-auths
   --port-start PORT        Starting port for start-folder. Default: 8061
   --service-name NAME      systemd user unit base name. Default: opencode-web-auth-batch
-  --hostname HOST          Optional hostname passed to start-folder
+  --hostname HOST          Hostname passed to start-folder. Default: 0.0.0.0
   --mode MODE              Optional mode passed to start-folder (web or serve)
   --prefix PREFIX          Optional batch prefix passed to start-folder
   -h, --help               Show this help
@@ -102,12 +102,48 @@ if [ -z "$opencode_web_auth_cmd" ]; then
   exit 1
 fi
 
+opencode_cmd="${OPENCODE_CMD:-$(command -v opencode || true)}"
+if [ -z "$opencode_cmd" ]; then
+  echo "opencode command not found in PATH" >&2
+  exit 1
+fi
+
 unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 path_unit="${unit_dir}/${service_name}.path"
 service_unit="${unit_dir}/${service_name}.service"
 refresh_unit="${unit_dir}/${service_name}-refresh.service"
 
 mkdir -p "$unit_dir"
+
+declare -a path_entries=(
+  "$(dirname "$opencode_web_auth_cmd")"
+  "$(dirname "$opencode_cmd")"
+  /usr/local/sbin
+  /usr/local/bin
+  /usr/sbin
+  /usr/bin
+  /sbin
+  /bin
+  /snap/bin
+)
+
+unit_path=""
+for entry in "${path_entries[@]}"; do
+  if [ -z "$entry" ] || [ ! -d "$entry" ]; then
+    continue
+  fi
+  case ":$unit_path:" in
+    *":$entry:"*)
+      ;;
+    *)
+      if [ -n "$unit_path" ]; then
+        unit_path="${unit_path}:$entry"
+      else
+        unit_path="$entry"
+      fi
+      ;;
+  esac
+done
 
 start_args=(
   "$opencode_web_auth_cmd" start-folder "$auth_folder" --port-start "$port_start"
@@ -144,6 +180,7 @@ Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=${HOME}
 Environment=HOME=${HOME}
+Environment=PATH=${unit_path}
 ExecStart=${start_cmd}
 ExecReload=${start_cmd}
 ExecStop=${stop_cmd}
@@ -175,7 +212,9 @@ WantedBy=default.target
 EOF
 
 systemctl --user daemon-reload
-systemctl --user enable --now "${service_name}.service" "${service_name}.path"
+systemctl --user enable "${service_name}.service" "${service_name}.path"
+systemctl --user restart "${service_name}.service"
+systemctl --user restart "${service_name}.path"
 
 echo "Installed:"
 echo "  $service_unit"
